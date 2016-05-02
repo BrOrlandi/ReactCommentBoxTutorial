@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>React Tutorial</title>
+    <!-- Not present in the tutorial. Just for basic styling. -->
+    <link rel="stylesheet" href="css/base.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.0.1/react.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.0.1/react-dom.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.6.16/browser.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/0.3.5/marked.min.js"></script>
+  </head>
+  <body>
+    <div id="content"></div>
+    <script type="text/babel">
+
+    class CommentBox extends React.Component {
+        constructor(){
+            super();
+            this.state = {
+                data: []
+            };
+        }
+
+        loadComments(){
+            $.ajax({
+              url: this.props.url,
+              dataType: 'json',
+              cache: false,
+              success: (data) => {
+                this.setState({data: data});
+              },
+              error: (xhr, status, err)=> {
+                console.error(this.props.url, status, err.toString());
+              }
+            });
+        }
+
+        componentDidMount() {
+            this.loadComments();
+            setInterval(this.loadComments, this.props.pollInterval);
+          }
+
+        render(){
+            return (
+                <div className="commentBox">
+                <h1>Comments</h1>
+                <CommentList data={this.state.data}/>
+                <CommentForm />
+                </div>
+            )
+        }
+    }
+
+    class CommentList extends React.Component {
+        render(){
+            return (
+                <div className="commentList">
+                    {this.props.data.map((comment)=>{
+                        return <Comment key={comment.id} author={comment.author}>{comment.text}</Comment>
+                    })}
+                </div>
+            )
+        }
+    }
+
+    class CommentForm extends React.Component {
+        render(){
+            return (
+                <form className="commentForm">
+                    <input type="text" placeholder="Your name" />
+                    <input type="text" placeholder="Say something..." />
+                    <input type="submit" value="Post" />
+                  </form>
+            )
+        }
+    }
+
+    class Comment extends React.Component {
+        rawMarkup() {
+            var rawMarkup = marked(this.props.children.toString(), {sanitize: true});
+            return { __html: rawMarkup };
+          }
+
+        render(){
+            return (
+                <div className="comment">
+                    <h2 className="commentAuthor">{this.props.author}</h2>
+                    <span dangerouslySetInnerHTML={this.rawMarkup()} />
+                </div>
+            )
+        }
+    }
+
+    ReactDOM.render(<CommentBox url="/api/comments" pollInterval={2000}/>,document.querySelector("#content"));
+
+    </script>
+  </body>
+</html>
